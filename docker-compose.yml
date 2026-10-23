@@ -1,0 +1,64 @@
+# ---------------------------------------------------------------------------
+# flx-agente-desarrollo: ejecutor de desarrollos (flujo OpenSpec del repo del proyecto en Claude Code, en paralelo)
+#
+# Codigo e imagen: bitbucket.org/flexxus_id/flx-agente-desarrollo
+# Este repo es solo el stack: lo que Portainer despliega.
+#
+# Lo usa flx-agente-historias (ciclo de desarrollo: historias en Spec Done de un sprint activo). Red interna
+# flx-agentes, sin puertos publicados. El volumen guarda los clones de trabajo y los caches de npm/Cypress/Playwright
+# (se borran solos a los RETENER_DIAS).
+#
+# Variables del stack: SERVICE_NAME, NODE, LOKI_URL, GIT_NOMBRE, GIT_EMAIL, JIRA_USERNAME, BITBUCKET_USERNAME,
+# DB_PRUEBA, DB_HOSTS, MAX_PARALELO, DB_PARALELO y los secretos CLAUDE_CODE_OAUTH_TOKEN (o ANTHROPIC_API_KEY),
+# DEV_TOKEN, JIRA_API_TOKEN, BITBUCKET_PASSWORD (API token de Atlassian con Bitbucket: lectura y escritura de repos y PR)
+# y PUESTO_B64 (los archivos fuera de git del checkout: .env, cypress.env.json).
+# ---------------------------------------------------------------------------
+version: '3.6'
+
+services:
+  dev:
+    image: fabreguesm/flx-agente-desarrollo:0.1.0
+    hostname: flx-agente-desarrollo
+    environment:
+      - TZ=America/Argentina/Buenos_Aires
+      - DEV_TOKEN=${DEV_TOKEN}
+      - CLAUDE_CODE_OAUTH_TOKEN=${CLAUDE_CODE_OAUTH_TOKEN}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - MAX_PARALELO=${MAX_PARALELO}
+      - DB_PARALELO=${DB_PARALELO}
+      # Base de prueba que el gate de seguridad de base de datos del kit puede aprobar (texto para el agente y hosts)
+      - DB_PRUEBA=${DB_PRUEBA}
+      - DB_HOSTS=${DB_HOSTS}
+      - JIRA_URL=https://flexxus.atlassian.net
+      - JIRA_USERNAME=${JIRA_USERNAME}
+      - JIRA_API_TOKEN=${JIRA_API_TOKEN}
+      - BITBUCKET_USERNAME=${BITBUCKET_USERNAME}
+      - BITBUCKET_PASSWORD=${BITBUCKET_PASSWORD}
+      - BITBUCKET_WORKSPACE=flexxus_id
+      - GIT_NOMBRE=${GIT_NOMBRE}
+      - GIT_EMAIL=${GIT_EMAIL}
+      - PUESTO_B64=${PUESTO_B64}
+      - RETENER_DIAS=7
+    volumes:
+      - trabajo:/trabajo
+    networks:
+      - agentes
+    deploy:
+      placement:
+        constraints: ["${NODE}"]
+      restart_policy:
+        condition: any
+        delay: 10s
+    logging:
+      driver: loki
+      options:
+        loki-url: ${LOKI_URL}
+
+volumes:
+  trabajo:
+    name: "${SERVICE_NAME}_trabajo"
+
+networks:
+  agentes:
+    external: true
+    name: flx-agentes
