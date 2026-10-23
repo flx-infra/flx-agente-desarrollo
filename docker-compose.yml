@@ -17,7 +17,7 @@ version: '3.6'
 
 services:
   dev:
-    image: fabreguesm/flx-agente-desarrollo:0.1.1
+    image: fabreguesm/flx-agente-desarrollo:0.1.2
     hostname: flx-agente-desarrollo
     environment:
       - TZ=America/Argentina/Buenos_Aires
